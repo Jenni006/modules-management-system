@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   DataTable,
   Table,
@@ -11,16 +11,25 @@ import {
   TableToolbarContent,
   TableToolbarSearch,
   TableContainer,
+  TableExpandHeader,
+  TableExpandRow,
+  TableExpandedRow,
   Button,
   Dropdown,
+  IconButton,
+  OverflowMenu,
+  OverflowMenuItem,
   Tag,
+  Breadcrumb,
+  BreadcrumbItem,
 } from '@carbon/react';
-import { Add, Filter } from '@carbon/icons-react';
+import { Add, Filter, Renew } from '@carbon/icons-react';
 import { useNavigate } from 'react-router-dom';
 import TopNav from '../components/TopNav';
 import StatusTag from '../components/StatusTag';
 import { mockModules } from '../data/mockModules';
-import type { Module } from '../types/module';
+import type { Module, ModuleCreate } from '../types/module';
+import CreateModuleDrawer from '../components/CreateModuleDrawer';
 
 const headers = [
   { key: 'name', header: 'Module Name' },
@@ -28,7 +37,6 @@ const headers = [
   { key: 'program', header: 'Program' },
   { key: 'status', header: 'Status' },
   { key: 'publish_date', header: 'Publish Date' },
-  { key: 'actions', header: 'Actions' },
 ];
 
 const programOptions = [
@@ -53,14 +61,22 @@ const formatDate = (dateStr?: string) => {
 const ModulesPage = () => {
   const navigate = useNavigate();
   const [selectedProgram, setSelectedProgram] = useState(programOptions[0]);
+  const [activeTabIndex, setActiveTabIndex] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const liveCount = mockModules.filter((m) => m.status === 'active').length;
   const draftCount = mockModules.filter((m) => m.status === 'draft').length;
 
-  const filteredModules =
-    selectedProgram.id === 'all'
-      ? mockModules
-      : mockModules.filter((m) => m.program === selectedProgram.id);
+  const filteredModules = mockModules.filter((m) => {
+    const matchesProgram =
+      selectedProgram.id === 'all' || m.program === selectedProgram.id;
+    const matchesSearch =
+      m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      m.program.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesProgram && matchesSearch;
+  });
 
   const rows = filteredModules.map((m: Module) => ({
     id: m.id,
@@ -69,73 +85,90 @@ const ModulesPage = () => {
     program: m.program,
     status: m.status,
     publish_date: m.publish_date,
-    actions: m.id,
   }));
 
   return (
-    <div>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f4f4f4' }}>
       <TopNav />
 
-      <div style={{ marginTop: '3rem', padding: '2rem' }}>
-        {/* Page Header */}
+      {/* White header banner */}
+      <div
+        style={{
+          marginTop: '48px',
+          backgroundColor: '#ffffff',
+          padding: '1.5rem 2rem 0 2rem',
+          borderBottom: '1px solid #e0e0e0',
+        }}
+      >
+        <Breadcrumb>
+          <BreadcrumbItem>
+            <a href="#">Bread Crumb</a>
+          </BreadcrumbItem>
+          <BreadcrumbItem>
+            <a href="#">Bread Crumb</a>
+          </BreadcrumbItem>
+          <BreadcrumbItem>
+            <a href="#">Bread Crumb</a>
+          </BreadcrumbItem>
+          <BreadcrumbItem isCurrentPage>
+            <a href="/modules">Modules</a>
+          </BreadcrumbItem>
+        </Breadcrumb>
+
+        {/* Title row */}
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
+            marginTop: '1rem',
             marginBottom: '1.5rem',
           }}
         >
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 600 }}>Modules</h1>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 300, margin: 0 }}>
+            Modules
+          </h1>
           <div style={{ display: 'flex', gap: '1rem' }}>
             <Button kind="secondary">Review Queue</Button>
             <Button
               kind="primary"
               renderIcon={Add}
-              onClick={() => navigate('/modules/create')}
+              onClick={() => setDrawerOpen(true)}
             >
               Create Modules
             </Button>
           </div>
         </div>
 
-        {/* Tabs Row */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '1rem',
-            marginBottom: '0.5rem',
-            borderBottom: '2px solid #e0e0e0',
-            paddingBottom: '0.5rem',
-          }}
-        >
-          <span
-            style={{
-              fontWeight: 600,
-              borderBottom: '2px solid #0f62fe',
-              paddingBottom: '0.5rem',
-              color: '#0f62fe',
-            }}
-          >
-            All Modules
-          </span>
-          <span style={{ color: '#525252', cursor: 'pointer' }}>
-            My Modules
-          </span>
+        {/* Tabs */}
+        <div style={{ display: 'flex' }}>
+          {['All Modules', 'My Modules'].map((label, index) => (
+            <button
+              key={label}
+              onClick={() => setActiveTabIndex(index)}
+              style={{
+                padding: '0.65rem 1.5rem',
+                fontSize: '14px',
+                fontWeight: 400,
+                cursor: 'pointer',
+                border: '1px solid #e0e0e0',
+                borderRight: index === 0 ? 'none' : '1px solid #e0e0e0',
+                background: activeTabIndex === index ? '#161616' : '#ffffff',
+                color: activeTabIndex === index ? '#ffffff' : '#161616',
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* Status Summary */}
-        <p
-          style={{
-            fontSize: '0.875rem',
-            color: '#525252',
-            marginBottom: '1.5rem',
-          }}
-        >
-          Live Modules: {liveCount} | Draft Modules: {draftCount}
+      {/* Content area */}
+      <div style={{ padding: '1rem 2rem 2rem 2rem' }}>
+        <p style={{ fontSize: '12px', color: '#525252', marginBottom: '1rem' }}>
+          Live Modules: {liveCount} | Draft modules: {draftCount}
         </p>
 
-        {/* Data Table */}
         <DataTable rows={rows} headers={headers}>
           {({
             rows: tableRows,
@@ -143,42 +176,57 @@ const ModulesPage = () => {
             getTableProps,
             getHeaderProps,
             getRowProps,
-            onInputChange,
           }: any) => (
             <TableContainer>
               <TableToolbar>
-                <TableToolbarContent>
-                  <Button
+                <TableToolbarContent style={{ gap: 0 }}>
+                  <IconButton
                     kind="ghost"
-                    renderIcon={Filter}
-                    iconDescription="Filter"
-                    hasIconOnly
-                    tooltipPosition="bottom"
-                  />
-                  <Dropdown
-                    id="program-filter"
-                    titleText=""
-                    items={programOptions}
-                    itemToString={(item: any) => item?.label || ''}
-                    selectedItem={selectedProgram}
-                    onChange={({ selectedItem }: any) =>
-                      setSelectedProgram(selectedItem)
-                    }
-                    label="All Programs"
-                    size="md"
-                    style={{ minWidth: '180px' }}
-                  />
+                    label="Filter"
+                    align="bottom"
+                  >
+                    <Filter />
+                  </IconButton>
+
+                  <div style={{ width: '180px' }}>
+                    <Dropdown
+                      id="program-select-dropdown"
+                      titleText=""
+                      items={programOptions}
+                      selectedItem={selectedProgram}
+                      onChange={({ selectedItem }) => {
+                        if (selectedItem) setSelectedProgram(selectedItem);
+                      }}
+                      label="All Programs"
+                      size="md"
+                      type="inline"
+                    />
+                  </div>
+
                   <TableToolbarSearch
                     placeholder="Find module by name, author or category"
-                    onChange={onInputChange}
+                    onChange={(e: any) => setSearchQuery(e?.target?.value || '')}
                     expanded
                   />
+
+                  <IconButton
+                    kind="ghost"
+                    label="Reset Filters"
+                    align="bottom"
+                    onClick={() => {
+                      setSelectedProgram(programOptions[0]);
+                      setSearchQuery('');
+                    }}
+                  >
+                    <Renew />
+                  </IconButton>
                 </TableToolbarContent>
               </TableToolbar>
 
               <Table {...getTableProps()}>
                 <TableHead>
                   <TableRow>
+                    <TableExpandHeader />
                     {tableHeaders.map((header: any) => (
                       <TableHeader
                         {...getHeaderProps({ header })}
@@ -187,6 +235,7 @@ const ModulesPage = () => {
                         {header.header}
                       </TableHeader>
                     ))}
+                    <TableHeader />
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -195,71 +244,152 @@ const ModulesPage = () => {
                       (m) => m.id === row.id
                     )!;
                     return (
-                      <TableRow {...getRowProps({ row })} key={row.id}>
-                        {row.cells.map((cell: any) => {
-                          if (cell.info.header === 'name') {
+                      <React.Fragment key={row.id}>
+                        <TableExpandRow
+                          key={row.id}
+                          {...(() => {
+                            const { key, ...rest } = getRowProps({ row });
+                            return rest;
+                          })()}
+                        >
+                          {row.cells.map((cell: any) => {
+                            if (cell.info.header === 'name') {
+                              return (
+                                <TableCell key={cell.id}>
+                                  <span
+                                    style={{
+                                      color: '#0f62fe',
+                                      cursor: 'pointer',
+                                      textDecoration: 'underline',
+                                    }}
+                                    onClick={() =>
+                                      navigate(`/modules/${module.id}`)
+                                    }
+                                  >
+                                    {cell.value}
+                                  </span>
+                                </TableCell>
+                              );
+                            }
+                            if (cell.info.header === 'status') {
+                              return (
+                                <TableCell key={cell.id}>
+                                  <StatusTag status={cell.value} />
+                                </TableCell>
+                              );
+                            }
+                            if (cell.info.header === 'publish_date') {
+                              return (
+                                <TableCell key={cell.id}>
+                                  {formatDate(cell.value)}
+                                </TableCell>
+                              );
+                            }
                             return (
                               <TableCell key={cell.id}>
-                                <span
+                                {cell.value}
+                              </TableCell>
+                            );
+                          })}
+                          <TableCell>
+                            <OverflowMenu flipped size="sm">
+                              <OverflowMenuItem
+                                itemText="View Details"
+                                onClick={() =>
+                                  navigate(`/modules/${module.id}`)
+                                }
+                              />
+                              <OverflowMenuItem
+                                itemText="Edit Module"
+                                onClick={() =>
+                                  navigate(`/modules/${module.id}/edit`)
+                                }
+                              />
+                            </OverflowMenu>
+                          </TableCell>
+                        </TableExpandRow>
+
+                        <TableExpandedRow colSpan={tableHeaders.length + 2}>
+                          <div
+                            style={{ padding: '1rem', background: '#f4f4f4' }}
+                          >
+                            <div
+                              style={{
+                                display: 'flex',
+                                gap: '2rem',
+                                marginBottom: '1rem',
+                              }}
+                            >
+                              <div>
+                                <p style={{ fontSize: '12px', color: '#525252' }}>
+                                  Category
+                                </p>
+                                <p style={{ fontWeight: 500 }}>
+                                  {module.category}
+                                </p>
+                              </div>
+                              <div>
+                                <p style={{ fontSize: '12px', color: '#525252' }}>
+                                  Target Group
+                                </p>
+                                <p style={{ fontWeight: 500 }}>
+                                  {module.target_group}
+                                </p>
+                              </div>
+                              <div>
+                                <p style={{ fontSize: '12px', color: '#525252' }}>
+                                  Service Component
+                                </p>
+                                <p style={{ fontWeight: 500 }}>
+                                  {module.service_component}
+                                </p>
+                              </div>
+                            </div>
+
+                            {module.quick_summary && (
+                              <div style={{ marginBottom: '1rem' }}>
+                                <p
                                   style={{
-                                    color: '#0f62fe',
-                                    cursor: 'pointer',
-                                    textDecoration: 'underline',
+                                    fontSize: '12px',
+                                    color: '#525252',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    marginBottom: '0.25rem',
                                   }}
-                                  onClick={() =>
-                                    navigate(`/modules/${module.id}`)
-                                  }
                                 >
-                                  {cell.value}
-                                </span>
-                              </TableCell>
-                            );
-                          }
-                          if (cell.info.header === 'status') {
-                            return (
-                              <TableCell key={cell.id}>
-                                <StatusTag status={cell.value} />
-                              </TableCell>
-                            );
-                          }
-                          if (cell.info.header === 'publish_date') {
-                            return (
-                              <TableCell key={cell.id}>
-                                {formatDate(cell.value)}
-                              </TableCell>
-                            );
-                          }
-                          if (cell.info.header === 'actions') {
-                            return (
-                              <TableCell key={cell.id}>
-                                <Button
-                                  kind="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    navigate(`/modules/${module.id}`)
-                                  }
-                                >
-                                  View
-                                </Button>
-                                <Button
-                                  kind="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    navigate(`/modules/${module.id}/edit`)
-                                  }
-                                >
-                                  Edit
-                                </Button>
-                              </TableCell>
-                            );
-                          }
-                          return (
-                            <TableCell key={cell.id}>
-                              {cell.value}
-                            </TableCell>
-                          );
-                        })}
-                      </TableRow>
+                                  Generated Summary
+                                  <span
+                                    style={{
+                                      background: '#0f62fe',
+                                      color: '#ffffff',
+                                      padding: '0.1rem 0.4rem',
+                                      fontSize: '10px',
+                                      borderRadius: '2px',
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    AI
+                                  </span>
+                                </p>
+                                <p style={{ fontSize: '14px' }}>
+                                  {module.quick_summary}
+                                </p>
+                              </div>
+                            )}
+
+                            {module.tags && module.tags.length > 0 && (
+                              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                {module.tags.map((tag) => (
+                                  <Tag key={tag} type="blue" size="sm">
+                                    {tag}
+                                  </Tag>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </TableExpandedRow>
+                      </React.Fragment>
                     );
                   })}
                 </TableBody>
@@ -268,6 +398,15 @@ const ModulesPage = () => {
           )}
         </DataTable>
       </div>
+
+      <CreateModuleDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        onSubmit={(data: ModuleCreate) => {
+          console.log('New module:', data);
+          setDrawerOpen(false);
+        }}
+      />
     </div>
   );
 };

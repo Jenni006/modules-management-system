@@ -1,6 +1,4 @@
-*,
-*::before,
-*::after {
+*, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -9,4 +7,127 @@
 body {
   font-family: 'IBM Plex Sans', sans-serif;
   background-color: #f4f4f4;
+}
+
+.page-wrapper {
+  margin-top: 48px;
+  background-color: #f4f4f4;
+  min-height: calc(100vh - 48px);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.summary-text {
+  font-size: 0.875rem;
+  color: #525252;
+  margin-bottom: 1rem;
+}
+
+.module-name-link {
+  color: #0f62fe;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.module-name-link:hover {
+  text-decoration: underline;
+}
+
+.expanded-details {
+  padding: 1rem 2rem;
+  background-color: #f4f4f4;
+}
+
+.expanded-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.expanded-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #525252;
+  margin-bottom: 0.25rem;
+}
+
+.expanded-value {
+  font-size: 0.875rem;
+  color: #161616;
+}
+
+.ai-badge {
+  display: inline-block;
+  background-color: #0f62fe;
+  color: #ffffff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 0.1rem 0.35rem;
+  margin-left: 0.5rem;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.tags-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.cds--breadcrumb-item a {
+  color: #0f62fe;
+  text-decoration: none;
+}
+
+.cds--breadcrumb-item a:hover {
+  text-decoration: underline;
+}
+
+/* Force dark header */
+.cds--header {
+  background-color: #161616 !important;
+  border-bottom: 1px solid #393939 !important;
+}
+
+.cds--header__name {
+  color: #ffffff !important;
+}
+
+.cds--header__menu-trigger {
+  color: #ffffff !important;
+}
+
+.cds--header__action {
+  color: #ffffff !important;
+}
+
+.cds--header__action:hover {
+  background-color: #393939 !important;
+}
+
+.cds--header__menu-trigger svg {
+  fill: #ffffff !important;
+}
+
+.cds--header__action {
+  border: none !important;
+  border-inline-end: none !important;
+}
+
+.page-header-banner {
+  background-color: #ffffff;
+  padding: 1.5rem 2rem 0 2rem;
+  border-bottom: 1px solid #e0e0e0;
 }
