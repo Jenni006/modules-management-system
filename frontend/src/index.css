@@ -131,3 +131,15 @@ body {
   padding: 1.5rem 2rem 0 2rem;
   border-bottom: 1px solid #e0e0e0;
 }
+
+.module-name {
+  color: #161616; 
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.module-name:hover {
+  color: #0f62fe; 
+  text-decoration: underline;
+}

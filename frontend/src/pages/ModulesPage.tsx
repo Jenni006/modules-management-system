@@ -30,6 +30,8 @@ import StatusTag from '../components/StatusTag';
 import { mockModules } from '../data/mockModules';
 import type { Module, ModuleCreate } from '../types/module';
 import CreateModuleDrawer from '../components/CreateModuleDrawer';
+import FilterPanel from '../components/FilterPanel';
+import type { FilterState } from '../components/FilterPanel';
 
 const headers = [
   { key: 'name', header: 'Module Name' },
@@ -64,6 +66,14 @@ const ModulesPage = () => {
   const [activeTabIndex, setActiveTabIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<FilterState>({
+    collaborators: [],
+    createdOnStart: '',
+    createdOnEnd: '',
+    categories: [],
+    tags: [],
+  });
 
   const liveCount = mockModules.filter((m) => m.status === 'active').length;
   const draftCount = mockModules.filter((m) => m.status === 'draft').length;
@@ -71,11 +81,31 @@ const ModulesPage = () => {
   const filteredModules = mockModules.filter((m) => {
     const matchesProgram =
       selectedProgram.id === 'all' || m.program === selectedProgram.id;
+
     const matchesSearch =
       m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
       m.program.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesProgram && matchesSearch;
+
+    const matchesCollaborator =
+      activeFilters.collaborators.length === 0 ||
+      activeFilters.collaborators.includes(m.author);
+
+    const matchesCategory =
+      activeFilters.categories.length === 0 ||
+      (m.category && activeFilters.categories.includes(m.category));
+
+    const matchesTags =
+      activeFilters.tags.length === 0 ||
+      activeFilters.tags.some((t) => m.tags?.includes(t));
+
+    return (
+      matchesProgram &&
+      matchesSearch &&
+      matchesCollaborator &&
+      matchesCategory &&
+      matchesTags
+    );
   });
 
   const rows = filteredModules.map((m: Module) => ({
@@ -91,7 +121,6 @@ const ModulesPage = () => {
     <div style={{ minHeight: '100vh', backgroundColor: '#f4f4f4' }}>
       <TopNav />
 
-      {/* White header banner */}
       <div
         style={{
           marginTop: '48px',
@@ -115,7 +144,6 @@ const ModulesPage = () => {
           </BreadcrumbItem>
         </Breadcrumb>
 
-        {/* Title row */}
         <div
           style={{
             display: 'flex',
@@ -140,7 +168,6 @@ const ModulesPage = () => {
           </div>
         </div>
 
-        {/* Tabs */}
         <div style={{ display: 'flex' }}>
           {['All Modules', 'My Modules'].map((label, index) => (
             <button
@@ -163,240 +190,256 @@ const ModulesPage = () => {
         </div>
       </div>
 
-      {/* Content area */}
       <div style={{ padding: '1rem 2rem 2rem 2rem' }}>
         <p style={{ fontSize: '12px', color: '#525252', marginBottom: '1rem' }}>
           Live Modules: {liveCount} | Draft modules: {draftCount}
         </p>
 
-        <DataTable rows={rows} headers={headers}>
-          {({
-            rows: tableRows,
-            headers: tableHeaders,
-            getTableProps,
-            getHeaderProps,
-            getRowProps,
-          }: any) => (
-            <TableContainer>
-              <TableToolbar>
-                <TableToolbarContent style={{ gap: 0 }}>
-                  <IconButton
-                    kind="ghost"
-                    label="Filter"
-                    align="bottom"
-                  >
-                    <Filter />
-                  </IconButton>
-
-                  <div style={{ width: '180px' }}>
-                    <Dropdown
-                      id="program-select-dropdown"
-                      titleText=""
-                      items={programOptions}
-                      selectedItem={selectedProgram}
-                      onChange={({ selectedItem }) => {
-                        if (selectedItem) setSelectedProgram(selectedItem);
-                      }}
-                      label="All Programs"
-                      size="md"
-                      type="inline"
-                    />
-                  </div>
-
-                  <TableToolbarSearch
-                    placeholder="Find module by name, author or category"
-                    onChange={(e: any) => setSearchQuery(e?.target?.value || '')}
-                    expanded
-                  />
-
-                  <IconButton
-                    kind="ghost"
-                    label="Reset Filters"
-                    align="bottom"
-                    onClick={() => {
-                      setSelectedProgram(programOptions[0]);
-                      setSearchQuery('');
-                    }}
-                  >
-                    <Renew />
-                  </IconButton>
-                </TableToolbarContent>
-              </TableToolbar>
-
-              <Table {...getTableProps()}>
-                <TableHead>
-                  <TableRow>
-                    <TableExpandHeader />
-                    {tableHeaders.map((header: any) => (
-                      <TableHeader
-                        {...getHeaderProps({ header })}
-                        key={header.key}
+        <div style={{ display: 'flex', gap: 0 }}>
+          <FilterPanel
+            open={filterOpen}
+            onClose={() => setFilterOpen(false)}
+            onApply={(filters) => {
+              setActiveFilters(filters);
+              setFilterOpen(false);
+            }}
+          />
+          
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <DataTable rows={rows} headers={headers}>
+              {({
+                rows: tableRows,
+                headers: tableHeaders,
+                getTableProps,
+                getHeaderProps,
+                getRowProps,
+              }: any) => (
+                <TableContainer>
+                  <TableToolbar>
+                    <TableToolbarContent style={{ gap: 0 }}>
+                      <IconButton
+                        kind="ghost"
+                        label="Filter"
+                        align="bottom"
+                        onClick={() => setFilterOpen((prev) => !prev)}
                       >
-                        {header.header}
-                      </TableHeader>
-                    ))}
-                    <TableHeader />
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {tableRows.map((row: any) => {
-                    const module = filteredModules.find(
-                      (m) => m.id === row.id
-                    )!;
-                    return (
-                      <React.Fragment key={row.id}>
-                        <TableExpandRow
-                          key={row.id}
-                          {...(() => {
-                            const { key, ...rest } = getRowProps({ row });
-                            return rest;
-                          })()}
-                        >
-                          {row.cells.map((cell: any) => {
-                            if (cell.info.header === 'name') {
-                              return (
-                                <TableCell key={cell.id}>
-                                  <span
-                                    style={{
-                                      color: '#0f62fe',
-                                      cursor: 'pointer',
-                                      textDecoration: 'underline',
-                                    }}
-                                    onClick={() =>
-                                      navigate(`/modules/${module.id}`)
-                                    }
-                                  >
-                                    {cell.value}
-                                  </span>
-                                </TableCell>
-                              );
-                            }
-                            if (cell.info.header === 'status') {
-                              return (
-                                <TableCell key={cell.id}>
-                                  <StatusTag status={cell.value} />
-                                </TableCell>
-                              );
-                            }
-                            if (cell.info.header === 'publish_date') {
-                              return (
-                                <TableCell key={cell.id}>
-                                  {formatDate(cell.value)}
-                                </TableCell>
-                              );
-                            }
-                            return (
-                              <TableCell key={cell.id}>
-                                {cell.value}
-                              </TableCell>
-                            );
-                          })}
-                          <TableCell>
-                            <OverflowMenu flipped size="sm">
-                              <OverflowMenuItem
-                                itemText="View Details"
-                                onClick={() =>
-                                  navigate(`/modules/${module.id}`)
-                                }
-                              />
-                              <OverflowMenuItem
-                                itemText="Edit Module"
-                                onClick={() =>
-                                  navigate(`/modules/${module.id}/edit`)
-                                }
-                              />
-                            </OverflowMenu>
-                          </TableCell>
-                        </TableExpandRow>
+                        <Filter />
+                      </IconButton>
 
-                        <TableExpandedRow colSpan={tableHeaders.length + 2}>
-                          <div
-                            style={{ padding: '1rem', background: '#f4f4f4' }}
+                      <div style={{ width: '180px' }}>
+                        <Dropdown
+                          id="program-select-dropdown"
+                          titleText=""
+                          items={programOptions}
+                          selectedItem={selectedProgram}
+                          onChange={({ selectedItem }) => {
+                            if (selectedItem) setSelectedProgram(selectedItem);
+                          }}
+                          label="All Programs"
+                          size="md"
+                          type="inline"
+                        />
+                      </div>
+
+                      <TableToolbarSearch
+                        placeholder="Find module by name, author or category"
+                        onChange={(e: any) => setSearchQuery(e?.target?.value || '')}
+                        expanded
+                      />
+
+                      <IconButton
+                        kind="ghost"
+                        label="Reset Filters"
+                        align="bottom"
+                        onClick={() => {
+                          setSelectedProgram(programOptions[0]);
+                          setSearchQuery('');
+                          setActiveFilters({
+                            collaborators: [],
+                            createdOnStart: '',
+                            createdOnEnd: '',
+                            categories: [],
+                            tags: [],
+                          });
+                        }}
+                      >
+                        <Renew />
+                      </IconButton>
+                    </TableToolbarContent>
+                  </TableToolbar>
+
+                  <Table {...getTableProps()}>
+                    <TableHead>
+                      <TableRow>
+                        <TableExpandHeader />
+                        {tableHeaders.map((header: any) => (
+                          <TableHeader
+                            {...getHeaderProps({ header })}
+                            key={header.key}
                           >
-                            <div
-                              style={{
-                                display: 'flex',
-                                gap: '2rem',
-                                marginBottom: '1rem',
-                              }}
+                            {header.header}
+                          </TableHeader>
+                        ))}
+                        <TableHeader />
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {tableRows.map((row: any) => {
+                        const module = filteredModules.find(
+                          (m) => m.id === row.id
+                        );
+                        return (
+                          <React.Fragment key={row.id}>
+                            <TableExpandRow
+                              key={row.id}
+                              {...(() => {
+                                const { key, ...rest } = getRowProps({ row });
+                                return rest;
+                              })()}
                             >
-                              <div>
-                                <p style={{ fontSize: '12px', color: '#525252' }}>
-                                  Category
-                                </p>
-                                <p style={{ fontWeight: 500 }}>
-                                  {module.category}
-                                </p>
-                              </div>
-                              <div>
-                                <p style={{ fontSize: '12px', color: '#525252' }}>
-                                  Target Group
-                                </p>
-                                <p style={{ fontWeight: 500 }}>
-                                  {module.target_group}
-                                </p>
-                              </div>
-                              <div>
-                                <p style={{ fontSize: '12px', color: '#525252' }}>
-                                  Service Component
-                                </p>
-                                <p style={{ fontWeight: 500 }}>
-                                  {module.service_component}
-                                </p>
-                              </div>
-                            </div>
+                              {row.cells.map((cell: any) => {
+                                if (cell.info.header === 'name') {
+                                  return (
+                                    <TableCell key={cell.id}>
+                                      <span
+                                        className="module-name"
+                                        onClick={() =>
+                                            module && navigate(`/modules/${module.id}`)
+                                        }
+                                        >
+                                        {cell.value}
+                                      </span>
+                                    </TableCell>
+                                  );
+                                }
+                                if (cell.info.header === 'status') {
+                                  return (
+                                    <TableCell key={cell.id}>
+                                      <StatusTag status={cell.value} />
+                                    </TableCell>
+                                  );
+                                }
+                                if (cell.info.header === 'publish_date') {
+                                  return (
+                                    <TableCell key={cell.id}>
+                                      {formatDate(cell.value)}
+                                    </TableCell>
+                                  );
+                                }
+                                return (
+                                  <TableCell key={cell.id}>
+                                    {cell.value}
+                                  </TableCell>
+                                );
+                              })}
+                              <TableCell>
+                                <OverflowMenu flipped size="sm">
+                                  <OverflowMenuItem
+                                    itemText="View Details"
+                                    onClick={() =>
+                                      module && navigate(`/modules/${module.id}`)
+                                    }
+                                  />
+                                  <OverflowMenuItem
+                                    itemText="Edit Module"
+                                    onClick={() =>
+                                      module && navigate(`/modules/${module.id}/edit`)
+                                    }
+                                  />
+                                </OverflowMenu>
+                              </TableCell>
+                            </TableExpandRow>
 
-                            {module.quick_summary && (
-                              <div style={{ marginBottom: '1rem' }}>
-                                <p
+                            <TableExpandedRow colSpan={tableHeaders.length + 2}>
+                              <div
+                                style={{ padding: '1rem', background: '#f4f4f4' }}
+                              >
+                                <div
                                   style={{
-                                    fontSize: '12px',
-                                    color: '#525252',
                                     display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    marginBottom: '0.25rem',
+                                    gap: '2rem',
+                                    marginBottom: '1rem',
                                   }}
                                 >
-                                  Generated Summary
-                                  <span
-                                    style={{
-                                      background: '#0f62fe',
-                                      color: '#ffffff',
-                                      padding: '0.1rem 0.4rem',
-                                      fontSize: '10px',
-                                      borderRadius: '2px',
-                                      fontWeight: 700,
-                                    }}
-                                  >
-                                    AI
-                                  </span>
-                                </p>
-                                <p style={{ fontSize: '14px' }}>
-                                  {module.quick_summary}
-                                </p>
-                              </div>
-                            )}
+                                  <div>
+                                    <p style={{ fontSize: '12px', color: '#525252' }}>
+                                      Category
+                                    </p>
+                                    <p style={{ fontWeight: 500 }}>
+                                      {module?.category || '—'}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p style={{ fontSize: '12px', color: '#525252' }}>
+                                      Target Group
+                                    </p>
+                                    <p style={{ fontWeight: 500 }}>
+                                      {module?.target_group || '—'}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p style={{ fontSize: '12px', color: '#525252' }}>
+                                      Service Component
+                                    </p>
+                                    <p style={{ fontWeight: 500 }}>
+                                      {module?.service_component || '—'}
+                                    </p>
+                                  </div>
+                                </div>
 
-                            {module.tags && module.tags.length > 0 && (
-                              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                {module.tags.map((tag) => (
-                                  <Tag key={tag} type="blue" size="sm">
-                                    {tag}
-                                  </Tag>
-                                ))}
+                                {module?.quick_summary && (
+                                  <div style={{ marginBottom: '1rem' }}>
+                                    <p
+                                      style={{
+                                        fontSize: '12px',
+                                        color: '#525252',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        marginBottom: '0.25rem',
+                                      }}
+                                    >
+                                      Generated Summary
+                                      <span
+                                        style={{
+                                          background: '#0f62fe',
+                                          color: '#ffffff',
+                                          padding: '0.1rem 0.4rem',
+                                          fontSize: '10px',
+                                          borderRadius: '2px',
+                                          fontWeight: 700,
+                                        }}
+                                      >
+                                        AI
+                                      </span>
+                                    </p>
+                                    <p style={{ fontSize: '14px' }}>
+                                      {module.quick_summary}
+                                    </p>
+                                  </div>
+                                )}
+
+                                {module?.tags && module.tags.length > 0 && (
+                                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    {module.tags.map((tag) => (
+                                      <Tag key={tag} type="blue" size="sm">
+                                        {tag}
+                                      </Tag>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </TableExpandedRow>
-                      </React.Fragment>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </DataTable>
+                            </TableExpandedRow>
+                          </React.Fragment>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </DataTable>
+          </div>
+        </div>
       </div>
 
       <CreateModuleDrawer

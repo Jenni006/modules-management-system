@@ -6,10 +6,10 @@ import {
   TextInput,
   TextArea,
   Dropdown,
-  Tag,
   Form,
   Stack,
   InlineNotification,
+  DismissibleTag
 } from '@carbon/react';
 import { Save } from '@carbon/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -360,14 +360,12 @@ const EditModulePage = () => {
                   style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}
                 >
                   {form.tags?.map((tag) => (
-                    <Tag
+                    <DismissibleTag
                       key={tag}
                       type="blue"
-                      filter
+                      text={tag}
                       onClose={() => removeTag(tag)}
-                    >
-                      {tag}
-                    </Tag>
+                    />
                   ))}
                 </div>
               </div>
