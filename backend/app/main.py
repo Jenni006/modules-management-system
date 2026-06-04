@@ -10,7 +10,7 @@ app = FastAPI(title="Modules Management API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://modules-management-system.vercel.app/modules" ],
+    allow_origins=["http://localhost:5173", "https://modules-management-system.vercel.app" ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
