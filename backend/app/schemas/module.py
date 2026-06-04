@@ -1,24 +1,26 @@
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
-from app.models.module import ModuleStatus
+from enum import Enum
+from uuid import UUID
+
+class ModuleStatus(str, Enum):
+    active = "active"
+    draft = "draft"
+    pending = "pending"
 
 
-class ModuleBase(BaseModel):
+class ModuleCreate(BaseModel):
     name: str
-    author: str
-    program: str
-    category: str
-    target_group: str
-    service_component: str
+    author: Optional[str] = None
+    program: Optional[str] = None
+    category: Optional[str] = None
+    target_group: Optional[str] = None
+    service_component: Optional[str] = None
     quick_summary: Optional[str] = None
     tags: Optional[List[str]] = []
     status: Optional[ModuleStatus] = ModuleStatus.draft
     publish_date: Optional[datetime] = None
-
-
-class ModuleCreate(ModuleBase):
-    pass
 
 
 class ModuleUpdate(BaseModel):
@@ -32,10 +34,20 @@ class ModuleUpdate(BaseModel):
     tags: Optional[List[str]] = None
     status: Optional[ModuleStatus] = None
     publish_date: Optional[datetime] = None
+    
 
-
-class ModuleResponse(ModuleBase):
-    id: UUID4
+class ModuleResponse(BaseModel):
+    id: UUID
+    name: str
+    author: Optional[str] = None
+    program: Optional[str] = None
+    category: Optional[str] = None
+    target_group: Optional[str] = None
+    service_component: Optional[str] = None
+    quick_summary: Optional[str] = None
+    tags: Optional[List[str]] = []
+    status: ModuleStatus
+    publish_date: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 

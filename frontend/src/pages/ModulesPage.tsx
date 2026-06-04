@@ -27,8 +27,8 @@ import { Add, Filter, Renew } from '@carbon/icons-react';
 import { useNavigate } from 'react-router-dom';
 import TopNav from '../components/TopNav';
 import StatusTag from '../components/StatusTag';
-import { mockModules } from '../data/mockModules';
-import type { Module, ModuleCreate } from '../types/module';
+import { useModules } from '../hooks/useModules';
+import type { Module } from '../types/module';
 import CreateModuleDrawer from '../components/CreateModuleDrawer';
 import FilterPanel from '../components/FilterPanel';
 import type { FilterState } from '../components/FilterPanel';
@@ -75,10 +75,12 @@ const ModulesPage = () => {
     tags: [],
   });
 
-  const liveCount = mockModules.filter((m) => m.status === 'active').length;
-  const draftCount = mockModules.filter((m) => m.status === 'draft').length;
+  const { data: modules = [] as Module[], isLoading, isError } = useModules();
 
-  const filteredModules = mockModules.filter((m) => {
+  const liveCount = modules.filter((m) => m.status === 'active').length;
+  const draftCount = modules.filter((m) => m.status === 'draft').length;
+
+  const filteredModules = (modules as Module[]).filter((m: Module) => {
     const matchesProgram =
       selectedProgram.id === 'all' || m.program === selectedProgram.id;
 
@@ -204,6 +206,16 @@ const ModulesPage = () => {
               setFilterOpen(false);
             }}
           />
+
+          {isLoading && (
+            <p style={{ padding: '2rem', color: '#525252' }}>Loading modules...</p>
+          )}
+
+          {isError && (
+            <p style={{ padding: '2rem', color: '#da1e28' }}>
+              Failed to load modules. Make sure the backend is running.
+            </p>
+          )}
           
           <div style={{ flex: 1, minWidth: 0 }}>
             <DataTable rows={rows} headers={headers}>
@@ -421,7 +433,7 @@ const ModulesPage = () => {
 
                                 {module?.tags && module.tags.length > 0 && (
                                   <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    {module.tags.map((tag) => (
+                                    {module.tags.map((tag: string) => (
                                       <Tag key={tag} type="blue" size="sm">
                                         {tag}
                                       </Tag>
@@ -445,10 +457,7 @@ const ModulesPage = () => {
       <CreateModuleDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        onSubmit={(data: ModuleCreate) => {
-          console.log('New module:', data);
-          setDrawerOpen(false);
-        }}
+        onSubmit={() => setDrawerOpen(false)}
       />
     </div>
   );

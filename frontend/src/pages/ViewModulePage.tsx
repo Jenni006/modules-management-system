@@ -8,8 +8,7 @@ import { Edit } from '@carbon/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import TopNav from '../components/TopNav';
 import StatusTag from '../components/StatusTag';
-import { mockModules } from '../data/mockModules';
-
+import { useModule } from '../hooks/useModules';
 const formatDate = (dateStr?: string) => {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleDateString('en-GB', {
@@ -22,28 +21,37 @@ const formatDate = (dateStr?: string) => {
 const ViewModulePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { data: module, isLoading, isError } = useModule(id!);
 
-  const module = mockModules.find((m) => m.id === id);
-
-  if (!module) {
-    return (
-      <div>
-        <TopNav />
-        <div style={{ marginTop: '48px', padding: '2rem' }}>
-          <p>Module not found.</p>
-          <Button kind="secondary" onClick={() => navigate('/modules')}>
-            Back to Modules
-          </Button>
-        </div>
+  if (isLoading) {
+  return (
+    <div>
+      <TopNav />
+      <div style={{ marginTop: '48px', padding: '2rem' }}>
+        <p>Loading module...</p>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+if (isError || !module) {
+  return (
+    <div>
+      <TopNav />
+      <div style={{ marginTop: '48px', padding: '2rem' }}>
+        <p>Module not found.</p>
+        <Button kind="secondary" onClick={() => navigate('/modules')}>
+          Back to Modules
+        </Button>
+      </div>
+    </div>
+  );
+}
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f4f4f4' }}>
       <TopNav />
 
-      {/* White header banner */}
       <div
         style={{
           marginTop: '48px',
@@ -93,10 +101,8 @@ const ViewModulePage = () => {
         </div>
       </div>
 
-      {/* Content */}
       <div style={{ padding: '2rem' }}>
 
-        {/* Details Card */}
         <div
           style={{
             backgroundColor: '#ffffff',
@@ -191,7 +197,6 @@ const ViewModulePage = () => {
           </div>
         </div>
 
-        {/* Summary Card */}
         {module.quick_summary && (
           <div
             style={{
@@ -233,7 +238,6 @@ const ViewModulePage = () => {
           </div>
         )}
 
-        {/* Tags Card */}
         {module.tags && module.tags.length > 0 && (
           <div
             style={{
@@ -255,7 +259,7 @@ const ViewModulePage = () => {
               Tags
             </h2>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              {module.tags.map((tag) => (
+              {module.tags.map((tag: string) => (
                 <Tag key={tag} type="blue" size="md">
                   {tag}
                 </Tag>
@@ -264,7 +268,6 @@ const ViewModulePage = () => {
           </div>
         )}
 
-        {/* Back button */}
         <Button
           kind="secondary"
           onClick={() => navigate('/modules')}

@@ -17,11 +17,11 @@ class Module(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String(255), nullable=False)
-    author = Column(String(255), nullable=False)
-    program = Column(String(255), nullable=False)
-    category = Column(String(255), nullable=False)
-    target_group = Column(String(255), nullable=False)
-    service_component = Column(String(255), nullable=False)
+    author = Column(String(255), nullable=True)
+    program = Column(String(255), nullable=True)
+    category = Column(String(255), nullable=True)
+    target_group = Column(String(255), nullable=True)
+    service_component = Column(String(255), nullable=True)
     quick_summary = Column(Text, nullable=True)
     tags = Column(ARRAY(String), nullable=True, default=[])
     status = Column(

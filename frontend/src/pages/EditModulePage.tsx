@@ -14,7 +14,7 @@ import {
 import { Save } from '@carbon/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import TopNav from '../components/TopNav';
-import { mockModules } from '../data/mockModules';
+import { useModule, useUpdateModule } from '../hooks/useModules';
 import { dropdownMatrix } from '../data/dropdownOptions';
 import type { ProgramKey } from '../data/dropdownOptions';
 import type { ModuleUpdate } from '../types/module';
@@ -26,8 +26,8 @@ const programOptions = Object.keys(dropdownMatrix) as ProgramKey[];
 const EditModulePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  const module = mockModules.find((m) => m.id === id);
+  const { data: module, isLoading, isError } = useModule(id!);
+  const updateModule = useUpdateModule(id!);
 
   const [form, setForm] = useState<ModuleUpdate>({});
   const [tagInput, setTagInput] = useState('');
@@ -48,9 +48,20 @@ const EditModulePage = () => {
         status: module.status,
       });
     }
-  }, [id]);
+  }, [module]);
 
-  if (!module) {
+  if (isLoading) {
+    return (
+      <div>
+        <TopNav />
+        <div style={{ marginTop: '48px', padding: '2rem' }}>
+          <p>Loading module...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError || !module) {
     return (
       <div>
         <TopNav />
@@ -71,7 +82,11 @@ const EditModulePage = () => {
     programConfig && form.category
       ? programConfig.targetGroups[form.category] || []
       : [];
-  const serviceOptions = programConfig?.serviceComponents || [];
+  const serviceOptions = programConfig
+    ? Array.isArray(programConfig.serviceComponents)
+      ? programConfig.serviceComponents
+      : (programConfig.serviceComponents as any)[form.category || ''] || []
+    : [];
 
   const handleProgramChange = (value: string) => {
     setForm((prev) => ({
@@ -118,18 +133,22 @@ const EditModulePage = () => {
     return newErrors;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
     setErrors({});
-    console.log('Updated module:', form);
-    setSaved(true);
-    setTimeout(() => {
-      navigate(`/modules/${id}`);
-    }, 1000);
+    try {
+      await updateModule.mutateAsync(form);
+      setSaved(true);
+      setTimeout(() => {
+        navigate(`/modules/${id}`);
+      }, 1000);
+    } catch (err) {
+      setErrors({ general: 'Failed to update module. Please try again.' });
+    }
   };
 
   return (
@@ -179,8 +198,9 @@ const EditModulePage = () => {
               kind="primary"
               renderIcon={Save}
               onClick={handleSave}
+              disabled={updateModule.isPending}
             >
-              Save Changes
+              {updateModule.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </div>

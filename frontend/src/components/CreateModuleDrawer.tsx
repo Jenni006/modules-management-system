@@ -13,18 +13,20 @@ import { Close } from '@carbon/icons-react';
 import { dropdownMatrix } from '../data/dropdownOptions';
 import type { ProgramKey } from '../data/dropdownOptions';
 import type { ModuleCreate } from '../types/module';
+import { useCreateModule } from '../hooks/useModules';
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: ModuleCreate) => void;
+  onSubmit: () => void;
 }
 
 const programOptions = Object.keys(dropdownMatrix) as ProgramKey[];
-
 const SUMMARY_MAX = 100;
 
-const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
+const CreateModuleDrawer = ({ open, onClose }: Props) => {
+  const createModule = useCreateModule();
+
   const [form, setForm] = useState<Partial<ModuleCreate>>({
     tags: [],
     status: 'draft',
@@ -42,7 +44,11 @@ const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
     programConfig && form.category
       ? programConfig.targetGroups[form.category] || []
       : [];
-  const serviceOptions = programConfig?.serviceComponents || [];
+  const serviceOptions = programConfig
+    ? Array.isArray(programConfig.serviceComponents)
+      ? programConfig.serviceComponents
+      : (programConfig.serviceComponents as any)[form.category || ''] || []
+    : [];
 
   const handleProgramChange = (value: string) => {
     setForm((prev) => ({
@@ -64,8 +70,7 @@ const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
 
   const addTag = () => {
     const trimmed = tagInput.trim();
-    if (!trimmed) return;
-    if (form.tags?.includes(trimmed)) return;
+    if (!trimmed || form.tags?.includes(trimmed)) return;
     setForm((prev) => ({ ...prev, tags: [...(prev.tags || []), trimmed] }));
     setTagInput('');
   };
@@ -84,26 +89,39 @@ const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
     if (!form.program) newErrors.program = 'Program is required';
     if (!form.category) newErrors.category = 'Category is required';
     if (!form.target_group) newErrors.target_group = 'Target group is required';
-    if (!form.service_component) newErrors.service_component = 'Service component is required';
+    if (!form.service_component)
+      newErrors.service_component = 'Service component is required';
     return newErrors;
   };
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
     if (!form.name?.trim()) {
       setErrors({ name: 'Module name is required' });
       return;
     }
-    onSubmit({ ...form, status: 'draft' } as ModuleCreate);
+    console.log('Sending payload:', { ...form, status: 'draft' });
+    try {
+      await createModule.mutateAsync({ ...form, status: 'draft' } as ModuleCreate);
+      onClose();
+    } catch (err) {
+      console.error('Save draft error:', err);
+      setSubmitError('Failed to save draft. Please try again.');
+    }
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const newErrors = validate();
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
     setErrors({});
-    onSubmit({ ...form, status: 'active' } as ModuleCreate);
+    try {
+      await createModule.mutateAsync({ ...form, status: 'active' } as ModuleCreate);
+      onClose();
+    } catch (err) {
+      setSubmitError('Failed to create module. Please try again.');
+    }
   };
 
   const isCreateEnabled =
@@ -116,7 +134,6 @@ const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
 
   return (
     <>
-      {/* Overlay */}
       <div
         onClick={onClose}
         style={{
@@ -126,8 +143,6 @@ const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
           zIndex: 6000,
         }}
       />
-
-      {/* Drawer */}
       <div
         style={{
           position: 'fixed',
@@ -142,7 +157,6 @@ const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
           boxShadow: '-4px 0 16px rgba(0,0,0,0.15)',
         }}
       >
-        {/* Header */}
         <div
           style={{
             display: 'flex',
@@ -169,7 +183,6 @@ const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
           />
         </div>
 
-        {/* Form Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem' }}>
           {submitError && (
             <InlineNotification
@@ -179,7 +192,6 @@ const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
               style={{ marginBottom: '1rem' }}
             />
           )}
-
           <Form>
             <Stack gap={6}>
               <TextInput
@@ -270,7 +282,6 @@ const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
                 invalidText={errors.service_component}
               />
 
-              {/* Quick Summary */}
               <div>
                 <TextArea
                   id="module-summary"
@@ -287,19 +298,11 @@ const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
                   }}
                   rows={3}
                 />
-                <p
-                  style={{
-                    fontSize: '0.75rem',
-                    color: '#525252',
-                    textAlign: 'right',
-                    marginTop: '0.25rem',
-                  }}
-                >
+                <p style={{ fontSize: '0.75rem', color: '#525252', textAlign: 'right', marginTop: '0.25rem' }}>
                   {form.quick_summary?.length || 0}/{SUMMARY_MAX}
                 </p>
               </div>
 
-              {/* Tags */}
               <div>
                 <p style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem' }}>
                   Tags
@@ -325,12 +328,7 @@ const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
                   {form.tags?.map((tag) => (
-                    <Tag
-                      key={tag}
-                      type="blue"
-                      filter
-                      onClose={() => removeTag(tag)}
-                    >
+                    <Tag key={tag} type="blue" filter onClose={() => removeTag(tag)}>
                       {tag}
                     </Tag>
                   ))}
@@ -340,7 +338,6 @@ const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
           </Form>
         </div>
 
-        {/* Footer */}
         <div
           style={{
             padding: '1rem 1.5rem',
@@ -350,15 +347,19 @@ const CreateModuleDrawer = ({ open, onClose, onSubmit }: Props) => {
             justifyContent: 'flex-end',
           }}
         >
-          <Button kind="secondary" onClick={handleSaveDraft}>
-            Save Draft
+          <Button
+            kind="secondary"
+            onClick={handleSaveDraft}
+            disabled={createModule.isPending}
+          >
+            {createModule.isPending ? 'Saving...' : 'Save Draft'}
           </Button>
           <Button
             kind="primary"
             onClick={handleCreate}
-            disabled={!isCreateEnabled}
+            disabled={!isCreateEnabled || createModule.isPending}
           >
-            Create and Open
+            {createModule.isPending ? 'Creating...' : 'Create and Open'}
           </Button>
         </div>
       </div>
