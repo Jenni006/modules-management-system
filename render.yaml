@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: modules-management-system
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    runtime: python-3.11.9
