@@ -5,7 +5,7 @@ Supports full CRUD operations with filtering, cascading dropdown logic, and real
 
 ## Live Demo
 
-- Frontend: https://modules-management-system.vercel.app/modules  
+- Frontend: https://modules-management-system.vercel.app
 - Backend API: https://modules-management-system.onrender.com  
 - API Docs: https://modules-management-system.onrender.com/docs  
 
