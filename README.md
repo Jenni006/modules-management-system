@@ -3,6 +3,12 @@
 A full-stack modules management system built with React, Carbon Design System, FastAPI, and PostgreSQL.  
 Supports full CRUD operations with filtering, cascading dropdown logic, and real-time API integration.
 
+## Live Demo
+
+- Frontend: https://modules-management-system.vercel.app/modules  
+- Backend API: https://modules-management-system.onrender.com  
+- API Docs: https://modules-management-system.onrender.com/docs  
+
 ## Tech Stack
 
 Frontend:
